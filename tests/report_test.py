@@ -17,7 +17,7 @@ stock = qs.utils.download_returns("META")
 qs.reports.html(
     returns=sample_data,
     benchmark=sample_benchmark,
-    output=os.path.join("test_output", "test.html"),
+    output=os.path.join("test_output", "report_test.html"),
     compounded=True,
     benchmark_title="SPX"
 )

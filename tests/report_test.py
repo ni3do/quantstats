@@ -1,4 +1,5 @@
 import numpy as np
+import os
 import pandas as pd
 import quantstats as qs
 
@@ -16,7 +17,7 @@ stock = qs.utils.download_returns("META")
 qs.reports.html(
     returns=sample_data,
     benchmark=sample_benchmark,
-    output="test.html",
+    output=os.path.join("test_output", "test.html"),
     compounded=True,
     benchmark_title="SPX"
 )

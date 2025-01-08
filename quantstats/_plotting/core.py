@@ -1227,3 +1227,131 @@ def format_pct_axis(x, _):
         return res.replace(".0K%", "K%")
     res = "%1.0f%%" % x
     return res.replace(".0%", "%")
+
+def plot_num_trade_histogram(
+    backtest_df,
+    bins=20,
+    fontname="Arial",
+    grayscale=False,
+    title="Number of trades histogram",
+    kde=True,
+    figsize=(10, 6),
+    ylabel=True,
+    subtitle=True,
+    savefig=None,
+    show=True,
+    **kwargs
+):
+    # colors = ['#348dc1', '#003366', 'red']
+    # if grayscale:
+    #     colors = ['silver', 'gray', 'black']
+
+    colors, _, _ = _get_colors(grayscale)
+
+    figsize = (0.995 * figsize[0], figsize[1])
+    fig, ax = _plt.subplots(figsize=figsize)
+
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["bottom"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+
+    fig.suptitle(
+        title, y=0.94, fontweight="bold", fontname=fontname, fontsize=14, color="black"
+    )
+
+    if subtitle:
+        ax.set_title(
+            "%s - %s           \n"
+            % (
+                "subtitle1",
+                "subtitle2"
+            ),
+            fontsize=12,
+            color="gray",
+        )
+
+    fig.set_facecolor("white")
+    ax.set_facecolor("white")
+
+    pallete = colors[1:2]
+    alpha = 0.7
+    # pallete = (
+    #     colors[1 : len(returns.columns) + 1]
+    # )
+    # if len(returns.columns) > 1:
+    #     alpha = 0.5
+    #
+    # _sns.kdeplot(data=combined_returns, color='black', ax=ax)
+    x = _sns.histplot(
+        data=backtest_df,
+        x="num_trades",
+        # bins=bins,
+        # alpha=alpha,
+        # kde=kde,
+        # stat="density",
+        # hue="",
+        # palette=pallete,
+        # ax=ax,
+    )
+
+    # # Why do we need average?
+    # if isinstance(combined_returns, _pd.Series) or len(combined_returns.columns) == 1:
+    #     ax.axvline(
+    #         combined_returns.mean(),
+    #         ls="--",
+    #         lw=1.5,
+    #         zorder=2,
+    #         label="Average",
+    #         color="red",
+    #     )
+
+    # _plt.setp(x.get_legend().get_texts(), fontsize=11)
+    # ax.xaxis.set_major_formatter(
+    #     _plt.FuncFormatter(lambda x, loc: "{:,}%".format(int(x * 100)))
+    # )
+    #
+    # # Removed static lines for clarity
+    # # ax.axhline(0.01, lw=1, color="#000000", zorder=2)
+    # # ax.axvline(0, lw=1, color="#000000", zorder=2)
+    #
+    # ax.set_xlabel("")
+    # ax.set_ylabel(
+    #     "Occurrences", fontname=fontname, fontweight="bold", fontsize=12, color="black"
+    # )
+    # ax.yaxis.set_label_coords(-0.1, 0.5)
+
+    # fig.autofmt_xdate()
+
+    try:
+        _plt.subplots_adjust(hspace=0, bottom=0, top=1)
+    except Exception:
+        pass
+
+    try:
+        fig.tight_layout()
+    except Exception:
+        pass
+
+    if savefig:
+        if isinstance(savefig, dict):
+            _plt.savefig(**savefig)
+        else:
+            _plt.savefig(savefig)
+
+    if show:
+        _plt.show(block=False)
+
+    _plt.close()
+
+    if not show:
+        return fig
+
+    return None
+
+
+
+
+
+
+

@@ -64,6 +64,7 @@ def html(
     figfmt="svg",
     template_path=None,
     match_dates=True,
+    backtest_df=None,
     **kwargs,
 ):
 
@@ -476,6 +477,29 @@ def html(
             )
             embed.append(figfile)
         tpl = tpl.replace("{{returns_dist}}", _embed_figure(embed, figfmt))
+
+    # add ticker stats from backtest_df
+    figfile = _utils._file_stream()
+    if isinstance(backtest_df, _pd.DataFrame):
+        _plots.plot_num_trade_histogram(
+            backtest_df,
+            savefig={"fname": figfile, "format": figfmt},
+        )
+        tpl = tpl.replace("{{num_trade_histogram}}", _embed_figure(figfile, figfmt))
+    
+    if isinstance(backtest_df, _pd.DataFrame):
+        ticker_performance = backtest_df[["ticker", "sharpe_ratio", "cumulative_return"]]
+        ticker_performance = ticker_performance.sort_values("cumulative_return", ascending=False)
+        ticker_performance.reset_index(drop=True, inplace=True)
+        ticker_performance = ticker_performance.rename(columns={"ticker": "Ticker", "sharpe_ratio": "Sharpe Ratio", "cumulative_return": "Cumulative Return"})
+        tpl = tpl.replace("{{best_tickers}}", _html_table(ticker_performance[:10], False))
+        tpl = tpl.replace("{{worst_tickers}}", _html_table(ticker_performance[-10:], False))
+
+        most_traded_tickers = backtest_df[["ticker", "num_trades", "sharpe_ratio"]]
+        most_traded_tickers = most_traded_tickers.sort_values("num_trades", ascending=False)
+        most_traded_tickers.reset_index(drop=True, inplace=True)
+        most_traded_tickers = most_traded_tickers.rename(columns={"ticker": "Ticker", "sharpe_ratio": "Sharpe Ratio", "num_traders": "Number of Trades"})
+        tpl = tpl.replace("{{most_traded_tickers}}", _html_table(most_traded_tickers[:10], False))
 
     tpl = _regex.sub(r"\{\{(.*?)\}\}", "", tpl)
     tpl = tpl.replace("white-space:pre;", "")

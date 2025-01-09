@@ -1094,3 +1094,6 @@ def monthly_returns(
         savefig=savefig,
         show=show,
     )
+
+def plot_num_trade_histogram(backtest_df, **kwargs):
+    return _core.plot_num_trade_histogram(backtest_df=backtest_df, **kwargs)

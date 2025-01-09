@@ -64,6 +64,7 @@ def html(
     figfmt="svg",
     template_path=None,
     match_dates=True,
+    backtest_df=None,
     **kwargs,
 ):
 
@@ -220,7 +221,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel='',
+        ylabel="",
         cumulative=compounded,
         prepare_returns=False,
     )
@@ -235,7 +236,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel='',
+        ylabel="",
         cumulative=compounded,
         prepare_returns=False,
     )
@@ -252,7 +253,7 @@ def html(
             subtitle=False,
             savefig={"fname": figfile, "format": figfmt},
             show=False,
-            ylabel='',
+            ylabel="",
             cumulative=compounded,
             prepare_returns=False,
         )
@@ -267,7 +268,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel='',
+        ylabel="",
         compounded=compounded,
         prepare_returns=False,
     )
@@ -282,7 +283,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel='',
+        ylabel="",
         compounded=compounded,
         prepare_returns=False,
     )
@@ -297,7 +298,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel='',
+        ylabel="",
         prepare_returns=False,
         active=active,
     )
@@ -315,7 +316,7 @@ def html(
             window2=win_year,
             savefig={"fname": figfile, "format": figfmt},
             show=False,
-            ylabel='',
+            ylabel="",
             prepare_returns=False,
         )
         tpl = tpl.replace("{{rolling_beta}}", _embed_figure(figfile, figfmt))
@@ -329,7 +330,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel='',
+        ylabel="",
         period=win_half_year,
         periods_per_year=win_year,
     )
@@ -343,7 +344,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel='',
+        ylabel="",
         period=win_half_year,
         periods_per_year=win_year,
     )
@@ -357,7 +358,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel='',
+        ylabel="",
         period=win_half_year,
         periods_per_year=win_year,
     )
@@ -373,7 +374,7 @@ def html(
             title=returns.name,
             savefig={"fname": figfile, "format": figfmt},
             show=False,
-            ylabel='',
+            ylabel="",
             compounded=compounded,
             prepare_returns=False,
         )
@@ -389,7 +390,7 @@ def html(
                 title=col,
                 savefig={"fname": figfile, "format": figfmt},
                 show=False,
-                ylabel='',
+                ylabel="",
                 compounded=compounded,
                 prepare_returns=False,
             )
@@ -404,7 +405,7 @@ def html(
         subtitle=False,
         savefig={"fname": figfile, "format": figfmt},
         show=False,
-        ylabel='',
+        ylabel="",
     )
     tpl = tpl.replace("{{dd_plot}}", _embed_figure(figfile, figfmt))
 
@@ -419,7 +420,7 @@ def html(
             returns_label=returns.name,
             savefig={"fname": figfile, "format": figfmt},
             show=False,
-            ylabel='',
+            ylabel="",
             compounded=compounded,
             active=active,
         )
@@ -436,7 +437,7 @@ def html(
                 returns_label=col,
                 savefig={"fname": figfile, "format": figfmt},
                 show=False,
-                ylabel='',
+                ylabel="",
                 compounded=compounded,
                 active=active,
             )
@@ -454,7 +455,7 @@ def html(
             title=returns.name,
             savefig={"fname": figfile, "format": figfmt},
             show=False,
-            ylabel='',
+            ylabel="",
             compounded=compounded,
             prepare_returns=False,
         )
@@ -470,12 +471,63 @@ def html(
                 title=col,
                 savefig={"fname": figfile, "format": figfmt},
                 show=False,
-                ylabel='',
+                ylabel="",
                 compounded=compounded,
                 prepare_returns=False,
             )
             embed.append(figfile)
         tpl = tpl.replace("{{returns_dist}}", _embed_figure(embed, figfmt))
+
+    # add ticker stats from backtest_df
+    figfile = _utils._file_stream()
+    if isinstance(backtest_df, _pd.DataFrame):
+        _plots.plot_num_trade_histogram(
+            backtest_df,
+            savefig={"fname": figfile, "format": figfmt},
+        )
+        tpl = tpl.replace("{{num_trade_histogram}}", _embed_figure(figfile, figfmt))
+
+    if isinstance(backtest_df, _pd.DataFrame):
+        ticker_performance = backtest_df[
+            ["ticker", "num_trades", "sharpe_ratio", "cumulative_return"]
+        ]
+        ticker_performance = ticker_performance.sort_values(
+            "cumulative_return", ascending=False
+        )
+        ticker_performance.reset_index(drop=True, inplace=True)
+        ticker_performance = ticker_performance.rename(
+            columns={
+                "ticker": "Ticker",
+                "num_trades": "Num Trades",
+                "sharpe_ratio": "Sharpe Ratio",
+                "cumulative_return": "Cum. Return",
+            }
+        )
+        tpl = tpl.replace(
+            "{{best_tickers}}", _html_table(ticker_performance[:10], False)
+        )
+        tpl = tpl.replace(
+            "{{worst_tickers}}", _html_table(ticker_performance[-10:], False)
+        )
+
+        most_traded_tickers = backtest_df[
+            ["ticker", "num_trades", "sharpe_ratio", "cumulative_return"]
+        ]
+        most_traded_tickers = most_traded_tickers.sort_values(
+            "num_trades", ascending=False
+        )
+        most_traded_tickers.reset_index(drop=True, inplace=True)
+        most_traded_tickers = most_traded_tickers.rename(
+            columns={
+                "ticker": "Ticker",
+                "num_trades": "Num Trades",
+                "sharpe_ratio": "Sharpe Ratio",
+                "cumulative_return": "Cum. Return",
+            }
+        )
+        tpl = tpl.replace(
+            "{{most_traded_tickers}}", _html_table(most_traded_tickers[:10], False)
+        )
 
     tpl = _regex.sub(r"\{\{(.*?)\}\}", "", tpl)
     tpl = tpl.replace("white-space:pre;", "")
@@ -930,13 +982,20 @@ def metrics(
         metrics["~~~~~~~~~~"] = blank
 
         metrics["Expected Daily %%"] = (
-            _stats.expected_return(df, compounded=compounded, prepare_returns=False) * pct
+            _stats.expected_return(df, compounded=compounded, prepare_returns=False)
+            * pct
         )
         metrics["Expected Monthly %%"] = (
-            _stats.expected_return(df, compounded=compounded, aggregate="ME", prepare_returns=False) * pct
+            _stats.expected_return(
+                df, compounded=compounded, aggregate="ME", prepare_returns=False
+            )
+            * pct
         )
         metrics["Expected Yearly %%"] = (
-            _stats.expected_return(df, compounded=compounded, aggregate="YE", prepare_returns=False) * pct
+            _stats.expected_return(
+                df, compounded=compounded, aggregate="YE", prepare_returns=False
+            )
+            * pct
         )
         metrics["Kelly Criterion %"] = (
             _stats.kelly_criterion(df, prepare_returns=False) * pct
@@ -980,13 +1039,17 @@ def metrics(
     m6 = today - relativedelta(months=6)
     y1 = today - relativedelta(years=1)
     if compounded:
-        metrics["MTD %"] = _stats.comp(df[df.index >= _dt(today.year, today.month, 1)]) * pct
+        metrics["MTD %"] = (
+            _stats.comp(df[df.index >= _dt(today.year, today.month, 1)]) * pct
+        )
         metrics["3M %"] = _stats.comp(df[df.index >= m3]) * pct
         metrics["6M %"] = _stats.comp(df[df.index >= m6]) * pct
         metrics["YTD %"] = _stats.comp(df[df.index >= _dt(today.year, 1, 1)]) * pct
         metrics["1Y %"] = _stats.comp(df[df.index >= y1]) * pct
     else:
-        metrics["MTD %"] = _np.sum(df[df.index >= _dt(today.year, today.month, 1)], axis=0) * pct
+        metrics["MTD %"] = (
+            _np.sum(df[df.index >= _dt(today.year, today.month, 1)], axis=0) * pct
+        )
         metrics["3M %"] = _np.sum(df[df.index >= m3], axis=0) * pct
         metrics["6M %"] = _np.sum(df[df.index >= m6], axis=0) * pct
         metrics["YTD %"] = _np.sum(df[df.index >= _dt(today.year, 1, 1)], axis=0) * pct
@@ -1006,19 +1069,30 @@ def metrics(
     # best/worst
     if mode.lower() == "full":
         metrics["~~~"] = blank
-        metrics["Best Day %"] = _stats.best(df, compounded=compounded, prepare_returns=False) * pct
+        metrics["Best Day %"] = (
+            _stats.best(df, compounded=compounded, prepare_returns=False) * pct
+        )
         metrics["Worst Day %"] = _stats.worst(df, prepare_returns=False) * pct
         metrics["Best Month %"] = (
-            _stats.best(df, compounded=compounded, aggregate="ME", prepare_returns=False) * pct
+            _stats.best(
+                df, compounded=compounded, aggregate="ME", prepare_returns=False
+            )
+            * pct
         )
         metrics["Worst Month %"] = (
             _stats.worst(df, aggregate="ME", prepare_returns=False) * pct
         )
         metrics["Best Year %"] = (
-            _stats.best(df, compounded=compounded, aggregate="YE", prepare_returns=False) * pct
+            _stats.best(
+                df, compounded=compounded, aggregate="YE", prepare_returns=False
+            )
+            * pct
         )
         metrics["Worst Year %"] = (
-            _stats.worst(df, compounded=compounded, aggregate="YE", prepare_returns=False) * pct
+            _stats.worst(
+                df, compounded=compounded, aggregate="YE", prepare_returns=False
+            )
+            * pct
         )
 
     # dd
@@ -1033,20 +1107,35 @@ def metrics(
     if mode.lower() == "full":
         metrics["~~~~~"] = blank
         metrics["Avg. Up Month %"] = (
-            _stats.avg_win(df, compounded=compounded, aggregate="ME", prepare_returns=False) * pct
+            _stats.avg_win(
+                df, compounded=compounded, aggregate="ME", prepare_returns=False
+            )
+            * pct
         )
         metrics["Avg. Down Month %"] = (
-            _stats.avg_loss(df, compounded=compounded, aggregate="ME", prepare_returns=False) * pct
+            _stats.avg_loss(
+                df, compounded=compounded, aggregate="ME", prepare_returns=False
+            )
+            * pct
         )
         metrics["Win Days %%"] = _stats.win_rate(df, prepare_returns=False) * pct
         metrics["Win Month %%"] = (
-            _stats.win_rate(df, compounded=compounded, aggregate="ME", prepare_returns=False) * pct
+            _stats.win_rate(
+                df, compounded=compounded, aggregate="ME", prepare_returns=False
+            )
+            * pct
         )
         metrics["Win Quarter %%"] = (
-            _stats.win_rate(df, compounded=compounded, aggregate="QE", prepare_returns=False) * pct
+            _stats.win_rate(
+                df, compounded=compounded, aggregate="QE", prepare_returns=False
+            )
+            * pct
         )
         metrics["Win Year %%"] = (
-            _stats.win_rate(df, compounded=compounded, aggregate="YE", prepare_returns=False) * pct
+            _stats.win_rate(
+                df, compounded=compounded, aggregate="YE", prepare_returns=False
+            )
+            * pct
         )
 
         if "benchmark" in df:
@@ -1255,7 +1344,7 @@ def plots(
                 grayscale=grayscale,
                 figsize=(figsize[0], figsize[0] * 0.5),
                 show=True,
-                ylabel='',
+                ylabel="",
                 compounded=compounded,
                 active=active,
             )
@@ -1267,7 +1356,7 @@ def plots(
                     grayscale=grayscale,
                     figsize=(figsize[0], figsize[0] * 0.5),
                     show=True,
-                    ylabel='',
+                    ylabel="",
                     returns_label=col,
                     compounded=compounded,
                     active=active,
@@ -1290,7 +1379,7 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.6),
         show=True,
-        ylabel='',
+        ylabel="",
         prepare_returns=False,
     )
 
@@ -1300,7 +1389,7 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.5),
         show=True,
-        ylabel='',
+        ylabel="",
         prepare_returns=False,
     )
 
@@ -1312,7 +1401,7 @@ def plots(
             grayscale=grayscale,
             figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
-            ylabel='',
+            ylabel="",
             prepare_returns=False,
         )
 
@@ -1322,7 +1411,7 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.5),
         show=True,
-        ylabel='',
+        ylabel="",
         prepare_returns=False,
     )
 
@@ -1332,7 +1421,7 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.5),
         show=True,
-        ylabel='',
+        ylabel="",
         prepare_returns=False,
     )
 
@@ -1349,7 +1438,7 @@ def plots(
         grayscale=grayscale,
         figsize=small_fig_size,
         show=True,
-        ylabel='',
+        ylabel="",
         prepare_returns=False,
         active=active,
     )
@@ -1363,7 +1452,7 @@ def plots(
             window2=win_year,
             figsize=small_fig_size,
             show=True,
-            ylabel='',
+            ylabel="",
             prepare_returns=False,
         )
 
@@ -1373,7 +1462,7 @@ def plots(
         grayscale=grayscale,
         figsize=small_fig_size,
         show=True,
-        ylabel='',
+        ylabel="",
         period=win_half_year,
     )
 
@@ -1382,7 +1471,7 @@ def plots(
         grayscale=grayscale,
         figsize=small_fig_size,
         show=True,
-        ylabel='',
+        ylabel="",
         period=win_half_year,
     )
 
@@ -1391,7 +1480,7 @@ def plots(
         grayscale=grayscale,
         figsize=small_fig_size,
         show=True,
-        ylabel='',
+        ylabel="",
         period=win_half_year,
     )
 
@@ -1401,7 +1490,7 @@ def plots(
             grayscale=grayscale,
             figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
-            ylabel='',
+            ylabel="",
             prepare_returns=False,
         )
     elif isinstance(returns, _pd.DataFrame):
@@ -1411,7 +1500,7 @@ def plots(
                 grayscale=grayscale,
                 figsize=(figsize[0], figsize[0] * 0.5),
                 show=True,
-                ylabel='',
+                ylabel="",
                 title=col,
                 prepare_returns=False,
             )
@@ -1421,7 +1510,7 @@ def plots(
         grayscale=grayscale,
         figsize=(figsize[0], figsize[0] * 0.4),
         show=True,
-        ylabel='',
+        ylabel="",
     )
 
     if isinstance(returns, _pd.Series):
@@ -1432,7 +1521,7 @@ def plots(
             figsize=(figsize[0], figsize[0] * 0.5),
             returns_label=returns.name,
             show=True,
-            ylabel='',
+            ylabel="",
             active=active,
         )
     elif isinstance(returns, _pd.DataFrame):
@@ -1443,7 +1532,7 @@ def plots(
                 grayscale=grayscale,
                 figsize=(figsize[0], figsize[0] * 0.5),
                 show=True,
-                ylabel='',
+                ylabel="",
                 returns_label=col,
                 compounded=compounded,
                 active=active,
@@ -1456,7 +1545,7 @@ def plots(
             figsize=(figsize[0], figsize[0] * 0.5),
             show=True,
             title=returns.name,
-            ylabel='',
+            ylabel="",
             prepare_returns=False,
         )
     elif isinstance(returns, _pd.DataFrame):
@@ -1467,7 +1556,7 @@ def plots(
                 figsize=(figsize[0], figsize[0] * 0.5),
                 show=True,
                 title=col,
-                ylabel='',
+                ylabel="",
                 prepare_returns=False,
             )
 

@@ -11,6 +11,7 @@ dist
 quantstats.egg-info
 QuantStats.egg-info
 Icon
-/tests
+/test_output
 .vscode
 Icon
+pyrightconfig.json
